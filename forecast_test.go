@@ -27,5 +27,5 @@ func TestForecast(t *testing.T) {
 	require.NoError(t, err)
 
 	require.False(t, res.CurrentWeather.Time.IsZero())
-	require.True(t, len(res.Hours) > 0)
+	require.True(t, len(res.HourlyTimes) > 0)
 }

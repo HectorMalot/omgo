@@ -13,6 +13,9 @@ type ForecastJSON struct {
 	CurrentWeather CurrentWeather             `json:"current_weather"`
 	HourlyUnits    map[string]string          `json:"hourly_units"`
 	HourlyMetrics  map[string]json.RawMessage `json:"hourly"` // Parsed later, the API returns both Time and floats here
+	DailyUnits     map[string]string          `json:"daily_units"`
+	DailyMetrics   map[string]json.RawMessage `json:"daily"` // Parsed later, the API returns both Time and floats here
+
 }
 
 type Forecast struct {
@@ -22,8 +25,11 @@ type Forecast struct {
 	GenerationTime float64
 	CurrentWeather CurrentWeather
 	HourlyUnits    map[string]string
-	Metrics        map[string][]float64 // Parsed from ForecastJSON.HourlyMetrics
-	Hours          []time.Time          // Parsed from ForecastJSON.HourlyMetrics
+	HourlyMetrics  map[string][]float64 // Parsed from ForecastJSON.HourlyMetrics
+	HourlyTimes    []time.Time          // Parsed from ForecastJSON.HourlyMetrics
+	DailyUnits     map[string]string
+	DailyMetrics   map[string][]float64 // Parsed from ForecastJSON.DailyMetrics
+	DailyTimes     []time.Time          // Parsed from ForecastJSON.DailyMetrics
 }
 
 type CurrentWeather struct {
@@ -51,8 +57,11 @@ func ParseBody(body []byte) (*Forecast, error) {
 		GenerationTime: f.GenerationTime,
 		CurrentWeather: f.CurrentWeather,
 		HourlyUnits:    f.HourlyUnits,
-		Hours:          []time.Time{},
-		Metrics:        make(map[string][]float64),
+		HourlyTimes:    []time.Time{},
+		HourlyMetrics:  make(map[string][]float64),
+		DailyUnits:     f.DailyUnits,
+		DailyTimes:     []time.Time{},
+		DailyMetrics:   make(map[string][]float64),
 	}
 
 	for k, v := range f.HourlyMetrics {
@@ -66,7 +75,7 @@ func ParseBody(body []byte) (*Forecast, error) {
 			}
 
 			for _, at := range target {
-				fc.Hours = append(fc.Hours, at.Time)
+				fc.HourlyTimes = append(fc.HourlyTimes, at.Time)
 			}
 
 			continue
@@ -76,7 +85,31 @@ func ParseBody(body []byte) (*Forecast, error) {
 		if err != nil {
 			return nil, err
 		}
-		fc.Metrics[k] = target
+		fc.HourlyMetrics[k] = target
+	}
+
+	for k, v := range f.DailyMetrics {
+		if k == "time" {
+			// We unmarshal into an ApiTime array because of the custom formatting
+			// of the timestamp in the API response
+			target := []ApiDate{}
+			err := json.Unmarshal(v, &target)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, at := range target {
+				fc.DailyTimes = append(fc.DailyTimes, at.Time)
+			}
+
+			continue
+		}
+		target := []float64{}
+		err := json.Unmarshal(v, &target)
+		if err != nil {
+			return nil, err
+		}
+		fc.DailyMetrics[k] = target
 	}
 
 	return fc, nil

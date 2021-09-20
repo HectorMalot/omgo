@@ -3,7 +3,6 @@ package omgo
 import (
 	"testing"
 
-	// "github.com/hectormalot/omgo"
 	"github.com/stretchr/testify/require"
 )
 

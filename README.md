@@ -1,6 +1,6 @@
 # Open-Meteo-Go
 
-A simple go client for the [open meteo](https://open-meteo.com) API. It supports all options of the API as of Sept 18 2021.
+A simple go client for the [open meteo](https://open-meteo.com) API. It supports all options of the API as of Sept 20 2021.
 
 ## Usage
 
