@@ -38,7 +38,8 @@ type Options struct {
 	PrecipitationUnit string   // Default "mm"
 	Timezone          string   // Default "UTC"
 	PastDays          int      // Default 0
-	Metrics           []string // Lists required metrics, see https://open-meteo.com/en/docs for valid metrics
+	HourlyMetrics     []string // Lists required hourly metrics, see https://open-meteo.com/en/docs for valid metrics
+	DailyMetrics      []string // Lists required daily metrics, see https://open-meteo.com/en/docs for valid metrics
 }
 
 func urlFromOptions(baseURL string, loc Location, opts *Options) string {
@@ -64,9 +65,14 @@ func urlFromOptions(baseURL string, loc Location, opts *Options) string {
 		url = fmt.Sprintf(`%s&past_days=%d`, url, opts.PastDays)
 	}
 
-	if opts.Metrics != nil && len(opts.Metrics) > 0 {
-		metrics := strings.Join(opts.Metrics, ",")
+	if opts.HourlyMetrics != nil && len(opts.HourlyMetrics) > 0 {
+		metrics := strings.Join(opts.HourlyMetrics, ",")
 		url = fmt.Sprintf(`%s&hourly=%s`, url, metrics)
+	}
+
+	if opts.DailyMetrics != nil && len(opts.DailyMetrics) > 0 {
+		metrics := strings.Join(opts.DailyMetrics, ",")
+		url = fmt.Sprintf(`%s&daily=%s`, url, metrics)
 	}
 
 	return url

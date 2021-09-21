@@ -21,11 +21,15 @@ func TestForecast(t *testing.T) {
 		PrecipitationUnit: "mm",
 		Timezone:          "UTC",
 		PastDays:          0,
-		Metrics:           []string{"temperature_2m"},
+		HourlyMetrics:     []string{"temperature_2m", "dewpoint_2m"},
+		DailyMetrics:      []string{"temperature_2m_max"},
 	}
 	res, err := c.Forecast(context.Background(), loc, &opts)
 	require.NoError(t, err)
 
 	require.False(t, res.CurrentWeather.Time.IsZero())
-	require.True(t, len(res.HourlyTimes) > 0)
+	require.Greater(t, len(res.HourlyTimes), 0)
+	require.Equal(t, 2, len(res.HourlyMetrics))
+	require.Greater(t, len(res.DailyTimes), 0)
+	require.Equal(t, 1, len(res.DailyMetrics))
 }

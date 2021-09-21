@@ -33,14 +33,17 @@ func main() {
 		PrecipitationUnit: "inch",
 		Timezone:          "US/Eastern",
 		PastDays:          2,
-		Metrics:           []string{"cloudcover, relativehumidity_2m"},
+		HourlyMetrics:     []string{"cloudcover, relativehumidity_2m"},
+		DailyMetrics:      []string{"temperature_2m_max"},
 	}
 	
 	res, _ := c.Forecast(context.Background(), loc, &opts)
 	fmt.Println(res)
-	// res.Metrics["cloudcover"] contains an array of cloud coverage predictions
-	// res.Metrics["relativehumidity_2m"] contains an array of relative humidity predictions
-	// res.Hours contains the timestamps for each prediction
+	// res.HourlyMetrics["cloudcover"] contains an array of cloud coverage predictions
+	// res.HourlyMetrics["relativehumidity_2m"] contains an array of relative humidity predictions
+	// res.HourlyTimes contains the timestamps for each prediction
+	// res.DailyMetrics["temperature_2m_max"] contains daily maximum values for the temperature_2m metric
+	// res.DailyTimes contains the timestamps for all daily predictions
 }
 
 

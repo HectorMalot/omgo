@@ -19,9 +19,10 @@ func TestURLBuilder(t *testing.T) {
 		PrecipitationUnit: "mm",
 		Timezone:          "UTC",
 		PastDays:          1,
-		Metrics:           []string{"temperature_2m", "cloudcover", "direct_radiation", "diffuse_radiation", "precipitation", "windspeed_10m"},
+		HourlyMetrics:     []string{"temperature_2m", "cloudcover", "direct_radiation", "diffuse_radiation", "precipitation", "windspeed_10m"},
+		DailyMetrics:      []string{"temperature_2m_max"},
 	}
 
 	url := urlFromOptions(c.URL, loc, &opts)
-	require.Equal(t, "https://api.open-meteo.com/v1/forecast?latitude=52.373800&longitude=4.891000&current_weather=true&temperature_unit=celsius&windspeed_unit=kmh&precipitation_unit=mm&timezone=UTC&past_days=1&hourly=temperature_2m,cloudcover,direct_radiation,diffuse_radiation,precipitation,windspeed_10m", url)
+	require.Equal(t, "https://api.open-meteo.com/v1/forecast?latitude=52.373800&longitude=4.891000&current_weather=true&temperature_unit=celsius&windspeed_unit=kmh&precipitation_unit=mm&timezone=UTC&past_days=1&hourly=temperature_2m,cloudcover,direct_radiation,diffuse_radiation,precipitation,windspeed_10m&daily=temperature_2m_max", url)
 }
