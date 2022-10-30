@@ -24,7 +24,7 @@ func TestForecastUnmarshalWithHourlyValues(t *testing.T) {
 		  "temperature": 13.3,
 		  "weathercode": 3,
 		  "windspeed": 10.3,
-		  "winddirection": 262
+		  "winddirection": 262.0
 		}
 	  }`)
 
@@ -57,7 +57,7 @@ func TestForecastUnmarshalWithDailyValues(t *testing.T) {
 		},
 		"daily_units": { "apparent_temperature_max": "°C" },
 		"current_weather": {
-		  "winddirection": 330,
+		  "winddirection": 330.0,
 		  "time": "2021-09-20T23:00",
 		  "temperature": 12.2,
 		  "weathercode": 3,
