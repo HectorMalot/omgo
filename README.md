@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	f, _ := omgo.NewForecastClient()
+	f, _ := omgo.NewClient()
 
 	// Get the current weather for amsterdam
 	loc, _ := omgo.NewLocation(52.3738, 4.8910)
@@ -56,8 +56,8 @@ func main() {
 		WindspeedUnit:     "mph",
 		PrecipitationUnit: "inch",
 		Timezone:          "US/Eastern",
-		StartDate:         "2023-06-01",
-		EndDate:           "2023-05-01",
+		StartDate:         "2023-05-01",
+		EndDate:		   "2023-06-01",
 		HourlyMetrics:     []string{"cloudcover, relativehumidity_2m"},
 		DailyMetrics:      []string{"temperature_2m_max"},
 	}
