@@ -24,13 +24,14 @@ func TestForecastUnmarshalWithHourlyValues(t *testing.T) {
 		  "temperature": 13.3,
 		  "weathercode": 3,
 		  "windspeed": 10.3,
-		  "winddirection": 262.0
+		  "winddirection": 262
 		}
 	  }`)
 
 	fc, err := ParseBody(body)
 	require.NoError(t, err)
 	require.Equal(t, []float64{13, 12.7, 12.7}, fc.HourlyMetrics["temperature_2m"])
+	require.Equal(t, float64(262), fc.CurrentWeather.WindDirection)
 	require.Equal(t,
 		[]time.Time{
 			time.Date(2021, time.August, 28, 0, 0, 0, 0, time.UTC),

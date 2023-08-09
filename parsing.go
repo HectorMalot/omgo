@@ -35,7 +35,7 @@ type Forecast struct {
 type CurrentWeather struct {
 	Temperature   float64
 	Time          ApiTime
-	WeatherCode   int
+	WeatherCode   float64
 	WindDirection float64
 	WindSpeed     float64
 }
