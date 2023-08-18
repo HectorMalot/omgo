@@ -14,7 +14,7 @@ type Client struct {
 	Client    *http.Client
 }
 
-type HistClient struct {
+type HistoricalClient struct {
 	URL       string
 	UserAgent string
 	Client    *http.Client
@@ -30,9 +30,9 @@ func NewClient() (Client, error) {
 	}, nil
 }
 
-func NewHistoricalClient() (HistClient, error) {
-	return HistClient{
-		URL:       "https://api.open-meteo.com/v1/archive",
+func NewHistoricalClient() (HistoricalClient, error) {
+	return HistoricalClient{
+		URL:       "https://archive-api.open-meteo.com/v1/archive",
 		UserAgent: DefaultUserAgent,
 		Client:    http.DefaultClient,
 	}, nil
@@ -61,7 +61,6 @@ type HistoricalOptions struct {
 	WindspeedUnit     string   // Default "kmh",
 	PrecipitationUnit string   // Default "mm"
 	Timezone          string   // Default "UTC"
-	PastDays          int      // Default 0
 	StartDate         string   // Format yyyy-mm-dd ISO8601 date
 	EndDate           string   // Format yyyy-mm-dd ISO8601 date
 	HourlyMetrics     []string // Lists required hourly metrics, see https://open-meteo.com/en/docs for valid metrics
@@ -127,9 +126,6 @@ func urlFromHistoricalOptions(baseURL string, loc Location, opts *HistoricalOpti
 	if opts.Timezone != "" {
 		url = fmt.Sprintf(`%s&timezone=%s`, url, opts.Timezone)
 	}
-	if opts.PastDays != 0 {
-		url = fmt.Sprintf(`%s&past_days=%d`, url, opts.PastDays)
-	}
 
 	if opts.HourlyMetrics != nil && len(opts.HourlyMetrics) > 0 {
 		metrics := strings.Join(opts.HourlyMetrics, ",")
@@ -169,10 +165,10 @@ func (c Client) Get(ctx context.Context, loc Location, opts *Options) ([]byte, e
 	return body, nil
 }
 
-func (hc HistClient) Get(ctx context.Context, loc Location, opts *HistoricalOptions) ([]byte, error) {
+func (hc HistoricalClient) Get(ctx context.Context, loc Location, opts *HistoricalOptions) ([]byte, error) {
 	url, err := urlFromHistoricalOptions(hc.URL, loc, opts)
 	if err != nil {
-		return []byte{}, fmt.Errorf("failed to form url from historical options")
+		return []byte{}, fmt.Errorf("failed to form url from historical options %q", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
