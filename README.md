@@ -57,7 +57,7 @@ func main() {
 		PrecipitationUnit: "inch",
 		Timezone:          "US/Eastern",
 		StartDate:         "2023-05-01",
-		EndDate:		   "2023-06-01",
+		EndDate:           "2023-06-01",
 		HourlyMetrics:     []string{"cloudcover, relativehumidity_2m"},
 		DailyMetrics:      []string{"temperature_2m_max"},
 	}
