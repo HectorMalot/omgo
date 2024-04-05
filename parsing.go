@@ -38,6 +38,7 @@ type CurrentWeather struct {
 	WeatherCode   float64
 	WindDirection float64
 	WindSpeed     float64
+	IsDay         int `json:"is_day"`
 }
 
 // ParseBody converts the API response body into a Forecast struct
