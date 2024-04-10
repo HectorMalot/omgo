@@ -15,7 +15,8 @@ type ForecastJSON struct {
 	HourlyMetrics  map[string]json.RawMessage `json:"hourly"` // Parsed later, the API returns both Time and floats here
 	DailyUnits     map[string]string          `json:"daily_units"`
 	DailyMetrics   map[string]json.RawMessage `json:"daily"` // Parsed later, the API returns both Time and floats here
-
+	CurrentUnits   map[string]string          `json:"current_units"`
+	CurrentMetrics map[string]json.RawMessage `json:"current"` // Parsed later, the API returns both Time and floats here
 }
 
 type Forecast struct {
@@ -30,6 +31,9 @@ type Forecast struct {
 	DailyUnits     map[string]string
 	DailyMetrics   map[string][]float64 // Parsed from ForecastJSON.DailyMetrics
 	DailyTimes     []time.Time          // Parsed from ForecastJSON.DailyMetrics
+	CurrentUnits   map[string]string
+	CurrentMetrics map[string]float64
+	CurrentTime    time.Time
 }
 
 type CurrentWeather struct {
@@ -63,6 +67,9 @@ func ParseBody(body []byte) (*Forecast, error) {
 		DailyUnits:     f.DailyUnits,
 		DailyTimes:     []time.Time{},
 		DailyMetrics:   make(map[string][]float64),
+		CurrentUnits:   f.CurrentUnits,
+		CurrentMetrics: make(map[string]float64),
+		CurrentTime:    time.Time{},
 	}
 
 	for k, v := range f.HourlyMetrics {
@@ -111,6 +118,26 @@ func ParseBody(body []byte) (*Forecast, error) {
 			return nil, err
 		}
 		fc.DailyMetrics[k] = target
+	}
+
+	for k, v := range f.CurrentMetrics {
+		if k == "time" {
+			// We unmarshal into an ApiTime because of the custom formatting
+			// of the timestamp in the API response
+			target := ApiTime{}
+			err := json.Unmarshal(v, &target)
+			if err != nil {
+				return nil, err
+			}
+			fc.CurrentTime = target.Time
+			continue
+		}
+		target := float64(0)
+		err := json.Unmarshal(v, &target)
+		if err != nil {
+			return nil, err
+		}
+		fc.CurrentMetrics[k] = target
 	}
 
 	return fc, nil

@@ -40,13 +40,20 @@ type Options struct {
 	PastDays          int      // Default 0
 	HourlyMetrics     []string // Lists required hourly metrics, see https://open-meteo.com/en/docs for valid metrics
 	DailyMetrics      []string // Lists required daily metrics, see https://open-meteo.com/en/docs for valid metrics
+	CurrentMetrics    []string // Lists required current metrics, see https://open-meteo.com/en/docs for valid metrics
 }
 
 func urlFromOptions(baseURL string, loc Location, opts *Options) string {
 	// TODO: Validate the Options are valid
-	url := fmt.Sprintf(`%s?latitude=%f&longitude=%f&current_weather=true`, baseURL, loc.lat, loc.lon)
+	url := fmt.Sprintf(`%s?latitude=%f&longitude=%f`, baseURL, loc.lat, loc.lon)
+
 	if opts == nil {
+		url = fmt.Sprintf(`%s&current_weather=true`, url)
 		return url
+	}
+
+	if opts.CurrentMetrics == nil {
+		url = fmt.Sprintf(`%s&current_weather=true`, url)
 	}
 
 	if opts.TemperatureUnit != "" {
@@ -73,6 +80,11 @@ func urlFromOptions(baseURL string, loc Location, opts *Options) string {
 	if opts.DailyMetrics != nil && len(opts.DailyMetrics) > 0 {
 		metrics := strings.Join(opts.DailyMetrics, ",")
 		url = fmt.Sprintf(`%s&daily=%s`, url, metrics)
+	}
+
+	if opts.CurrentMetrics != nil && len(opts.CurrentMetrics) > 0 {
+		metrics := strings.Join(opts.CurrentMetrics, ",")
+		url = fmt.Sprintf(`%s&current=%s`, url, metrics)
 	}
 
 	return url
