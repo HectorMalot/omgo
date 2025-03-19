@@ -11,6 +11,7 @@ func TestForecastUnmarshalWithHourlyValues(t *testing.T) {
 	body := []byte(`{"latitude": 52.52,
 		"longitude": 13.419,
 		"elevation": 44.812,
+		"timezone": "UTC",
 		"generationtime_ms": 2.2119,
 		"hourly": {
 			"time": ["2021-08-28T00:00", "2021-08-28T01:00", "2021-08-28T02:00"],
@@ -22,6 +23,7 @@ func TestForecastUnmarshalWithHourlyValues(t *testing.T) {
 		"current_weather": {
 		  "time": "2021-08-28T09:00",
 		  "temperature": 13.3,
+		  "is_day": 1,
 		  "weathercode": 3,
 		  "windspeed": 10.3,
 		  "winddirection": 262
@@ -38,6 +40,46 @@ func TestForecastUnmarshalWithHourlyValues(t *testing.T) {
 			time.Date(2021, time.August, 28, 1, 0, 0, 0, time.UTC),
 			time.Date(2021, time.August, 28, 2, 0, 0, 0, time.UTC)},
 		fc.HourlyTimes)
+	require.Equal(t, float64(1), fc.CurrentWeather.IsDay)
+}
+
+func TestForecastUnmarshalWithHourlyValuesInTimezone(t *testing.T) {
+	body := []byte(`{"latitude": 52.52,
+		"longitude": 13.419,
+		"elevation": 44.812,
+		"timezone": "US/Pacific",
+		"generationtime_ms": 2.2119,
+		"hourly": {
+			"time": ["2021-08-28T00:00", "2021-08-28T01:00", "2021-08-28T02:00"],
+			"temperature_2m": [13, 12.7, 12.7]
+		  },
+		"hourly_units": {
+		  "temperature_2m": "°C"
+		},
+		"current_weather": {
+		  "time": "2021-08-28T09:00",
+		  "temperature": 13.3,
+		  "is_day": 1,
+		  "weathercode": 3,
+		  "windspeed": 10.3,
+		  "winddirection": 262
+		}
+	  }`)
+
+	loc, err := time.LoadLocation("US/Pacific")
+	require.NoError(t, err)
+
+	fc, err := ParseBody(body)
+	require.NoError(t, err)
+	require.Equal(t, []float64{13, 12.7, 12.7}, fc.HourlyMetrics["temperature_2m"])
+	require.Equal(t, float64(262), fc.CurrentWeather.WindDirection)
+	require.Equal(t,
+		[]time.Time{
+			time.Date(2021, time.August, 28, 0, 0, 0, 0, loc),
+			time.Date(2021, time.August, 28, 1, 0, 0, 0, loc),
+			time.Date(2021, time.August, 28, 2, 0, 0, 0, loc)},
+		fc.HourlyTimes)
+	require.Equal(t, float64(1), fc.CurrentWeather.IsDay)
 }
 
 func TestForecastUnmarshalWithDailyValues(t *testing.T) {
