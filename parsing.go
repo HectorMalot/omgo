@@ -75,7 +75,7 @@ func ParseBody(body []byte) (*Forecast, error) {
 		DailyMetrics:   make(map[string][]float64),
 	}
 
-	// Fix the timezone fot the current weather timestamp, if needed
+	// Fix the timezone for the current weather timestamp, if needed
 	if f.Timezone != "UTC" {
 		y, m, d := f.CurrentWeather.Time.Date()
 		f.CurrentWeather.Time = ApiTime{
