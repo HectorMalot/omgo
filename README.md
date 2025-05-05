@@ -33,7 +33,7 @@ func main() {
 		PrecipitationUnit: "inch",
 		Timezone:          "US/Eastern",
 		PastDays:          2,
-		HourlyMetrics:     []string{"cloudcover, relativehumidity_2m"},
+		HourlyMetrics:     []string{"cloudcover", "relativehumidity_2m"},
 		DailyMetrics:      []string{"temperature_2m_max"},
 	}
 	
