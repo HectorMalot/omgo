@@ -23,13 +23,14 @@ func TestForecast(t *testing.T) {
 		PastDays:          0,
 		HourlyMetrics:     []string{"temperature_2m", "dewpoint_2m"},
 		DailyMetrics:      []string{"temperature_2m_max"},
+		CurrentMetrics:    []string{"temperature_2m", "weathercode", "windspeed_10m"},
 	}
 	res, err := c.Forecast(context.Background(), loc, &opts)
 	require.NoError(t, err)
 
-	require.False(t, res.CurrentWeather.Time.IsZero())
 	require.Greater(t, len(res.HourlyTimes), 0)
 	require.Equal(t, 2, len(res.HourlyMetrics))
 	require.Greater(t, len(res.DailyTimes), 0)
 	require.Equal(t, 1, len(res.DailyMetrics))
+	require.Equal(t, 4, len(res.CurrentMetrics))
 }
