@@ -8,6 +8,7 @@ import (
 type ForecastJSON struct {
 	Latitude       float64
 	Longitude      float64
+	Timezone       string
 	Elevation      float64
 	GenerationTime float64                    `json:"generationtime_ms"`
 	CurrentWeather CurrentWeather             `json:"current_weather"`
@@ -33,6 +34,7 @@ type Forecast struct {
 }
 
 type CurrentWeather struct {
+	IsDay         float64 `json:"is_day"`
 	Temperature   float64
 	Time          ApiTime
 	WeatherCode   float64
@@ -50,6 +52,15 @@ func ParseBody(body []byte) (*Forecast, error) {
 		return nil, err
 	}
 
+	loc := time.UTC
+	if f.Timezone != "" {
+		var err error
+		loc, err = time.LoadLocation(f.Timezone)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	fc := &Forecast{
 		Latitude:       f.Latitude,
 		Longitude:      f.Longitude,
@@ -64,6 +75,13 @@ func ParseBody(body []byte) (*Forecast, error) {
 		DailyMetrics:   make(map[string][]float64),
 	}
 
+	// Fix the timezone for the current weather timestamp, if needed
+	if f.Timezone != "UTC" {
+		y, m, d := f.CurrentWeather.Time.Date()
+		f.CurrentWeather.Time = ApiTime{
+			Time: time.Date(y, m, d, f.CurrentWeather.Time.Hour(), f.CurrentWeather.Time.Minute(), f.CurrentWeather.Time.Second(), f.CurrentWeather.Time.Nanosecond(), loc)}
+	}
+
 	for k, v := range f.HourlyMetrics {
 		if k == "time" {
 			// We unmarshal into an ApiTime array because of the custom formatting
@@ -75,7 +93,15 @@ func ParseBody(body []byte) (*Forecast, error) {
 			}
 
 			for _, at := range target {
-				fc.HourlyTimes = append(fc.HourlyTimes, at.Time)
+				// We can fix the timezone now: by default time.Time is UTC when unmarshalled,
+				// but we now know what the location should be, based on the response
+				if f.Timezone != "UTC" {
+					y, m, d := at.Date()
+					adjusted := time.Date(y, m, d, at.Hour(), at.Minute(), at.Second(), at.Nanosecond(), loc)
+					fc.HourlyTimes = append(fc.HourlyTimes, adjusted)
+				} else {
+					fc.HourlyTimes = append(fc.HourlyTimes, at.Time)
+				}
 			}
 
 			continue
@@ -99,7 +125,15 @@ func ParseBody(body []byte) (*Forecast, error) {
 			}
 
 			for _, at := range target {
-				fc.DailyTimes = append(fc.DailyTimes, at.Time)
+				// We can fix the timezone now: by default time.Time is UTC when unmarshalled,
+				// but we now know what the location should be, based on the response
+				if f.Timezone != "UTC" {
+					y, m, d := at.Date()
+					adjusted := time.Date(y, m, d, at.Hour(), at.Minute(), at.Second(), at.Nanosecond(), loc)
+					fc.DailyTimes = append(fc.DailyTimes, adjusted)
+				} else {
+					fc.DailyTimes = append(fc.DailyTimes, at.Time)
+				}
 			}
 
 			continue
