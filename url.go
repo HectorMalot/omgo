@@ -80,9 +80,6 @@ func (r *ForecastRequest) buildURL(baseURL, apiKey string) string {
 	}
 
 	// Other options
-	if r.timeFormat != "" {
-		params.Set("timeformat", string(r.timeFormat))
-	}
 	if r.cellSelection != "" {
 		params.Set("cell_selection", string(r.cellSelection))
 	}
@@ -143,9 +140,6 @@ func (r *HistoricalRequest) buildURL(baseURL, apiKey string) string {
 	// Other options
 	if r.timezone != "" {
 		params.Set("timezone", r.timezone)
-	}
-	if r.timeFormat != "" {
-		params.Set("timeformat", string(r.timeFormat))
 	}
 	if r.cellSelection != "" {
 		params.Set("cell_selection", string(r.cellSelection))

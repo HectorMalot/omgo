@@ -26,14 +26,6 @@ const (
 	Inches      PrecipitationUnit = "inch"
 )
 
-// TimeFormat specifies the format for time values in the response.
-type TimeFormat string
-
-const (
-	ISO8601  TimeFormat = "iso8601"
-	UnixTime TimeFormat = "unixtime"
-)
-
 // CellSelection specifies how grid-cells are selected.
 type CellSelection string
 

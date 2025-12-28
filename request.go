@@ -31,7 +31,6 @@ type ForecastRequest struct {
 	endHour   string
 
 	// Other options
-	timeFormat    TimeFormat
 	cellSelection CellSelection
 	models        []string
 
@@ -147,12 +146,6 @@ func (r *ForecastRequest) WithHourRange(startHour, endHour string) *ForecastRequ
 	return r
 }
 
-// WithTimeFormat sets the time format for the response.
-func (r *ForecastRequest) WithTimeFormat(format TimeFormat) *ForecastRequest {
-	r.timeFormat = format
-	return r
-}
-
 // WithCellSelection sets the grid-cell selection preference.
 func (r *ForecastRequest) WithCellSelection(selection CellSelection) *ForecastRequest {
 	r.cellSelection = selection
@@ -197,7 +190,6 @@ type HistoricalRequest struct {
 
 	// Other options
 	timezone      string
-	timeFormat    TimeFormat
 	cellSelection CellSelection
 
 	// Solar radiation options
@@ -264,12 +256,6 @@ func (r *HistoricalRequest) WithPrecipitationUnit(unit PrecipitationUnit) *Histo
 // WithTimezone sets the timezone for the response.
 func (r *HistoricalRequest) WithTimezone(tz string) *HistoricalRequest {
 	r.timezone = tz
-	return r
-}
-
-// WithTimeFormat sets the time format for the response.
-func (r *HistoricalRequest) WithTimeFormat(format TimeFormat) *HistoricalRequest {
-	r.timeFormat = format
 	return r
 }
 
