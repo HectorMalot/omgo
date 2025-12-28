@@ -1,0 +1,226 @@
+package omgo
+
+// HourlyMetric represents a metric that can be requested for hourly data.
+type HourlyMetric string
+
+// Hourly weather metrics available from the Open-Meteo API.
+const (
+	// Basic weather
+	HourlyTemperature2m       HourlyMetric = "temperature_2m"
+	HourlyRelativeHumidity2m  HourlyMetric = "relative_humidity_2m"
+	HourlyDewPoint2m          HourlyMetric = "dew_point_2m"
+	HourlyApparentTemperature HourlyMetric = "apparent_temperature"
+
+	// Pressure
+	HourlyPressureMSL     HourlyMetric = "pressure_msl"
+	HourlySurfacePressure HourlyMetric = "surface_pressure"
+
+	// Cloud cover
+	HourlyCloudCover     HourlyMetric = "cloud_cover"
+	HourlyCloudCoverLow  HourlyMetric = "cloud_cover_low"
+	HourlyCloudCoverMid  HourlyMetric = "cloud_cover_mid"
+	HourlyCloudCoverHigh HourlyMetric = "cloud_cover_high"
+
+	// Wind at different heights
+	HourlyWindSpeed10m      HourlyMetric = "wind_speed_10m"
+	HourlyWindSpeed80m      HourlyMetric = "wind_speed_80m"
+	HourlyWindSpeed120m     HourlyMetric = "wind_speed_120m"
+	HourlyWindSpeed180m     HourlyMetric = "wind_speed_180m"
+	HourlyWindDirection10m  HourlyMetric = "wind_direction_10m"
+	HourlyWindDirection80m  HourlyMetric = "wind_direction_80m"
+	HourlyWindDirection120m HourlyMetric = "wind_direction_120m"
+	HourlyWindDirection180m HourlyMetric = "wind_direction_180m"
+	HourlyWindGusts10m      HourlyMetric = "wind_gusts_10m"
+
+	// Solar radiation
+	HourlyShortwaveRadiation     HourlyMetric = "shortwave_radiation"
+	HourlyDirectRadiation        HourlyMetric = "direct_radiation"
+	HourlyDirectNormalIrradiance HourlyMetric = "direct_normal_irradiance"
+	HourlyDiffuseRadiation       HourlyMetric = "diffuse_radiation"
+	HourlyGlobalTiltedIrradiance HourlyMetric = "global_tilted_irradiance"
+
+	// Precipitation
+	HourlyPrecipitation            HourlyMetric = "precipitation"
+	HourlySnowfall                 HourlyMetric = "snowfall"
+	HourlyPrecipitationProbability HourlyMetric = "precipitation_probability"
+	HourlyRain                     HourlyMetric = "rain"
+	HourlyShowers                  HourlyMetric = "showers"
+
+	// Other
+	HourlyWeatherCode              HourlyMetric = "weather_code"
+	HourlySnowDepth                HourlyMetric = "snow_depth"
+	HourlyFreezingLevelHeight      HourlyMetric = "freezing_level_height"
+	HourlyVisibility               HourlyMetric = "visibility"
+	HourlyEvapotranspiration       HourlyMetric = "evapotranspiration"
+	HourlyET0FAOEvapotranspiration HourlyMetric = "et0_fao_evapotranspiration"
+	HourlyVapourPressureDeficit    HourlyMetric = "vapour_pressure_deficit"
+	HourlyCape                     HourlyMetric = "cape"
+	HourlySunshineDuration         HourlyMetric = "sunshine_duration"
+	HourlyIsDay                    HourlyMetric = "is_day"
+
+	// Soil temperature
+	HourlySoilTemperature0cm  HourlyMetric = "soil_temperature_0cm"
+	HourlySoilTemperature6cm  HourlyMetric = "soil_temperature_6cm"
+	HourlySoilTemperature18cm HourlyMetric = "soil_temperature_18cm"
+	HourlySoilTemperature54cm HourlyMetric = "soil_temperature_54cm"
+
+	// Soil moisture
+	HourlySoilMoisture0to1cm   HourlyMetric = "soil_moisture_0_to_1cm"
+	HourlySoilMoisture1to3cm   HourlyMetric = "soil_moisture_1_to_3cm"
+	HourlySoilMoisture3to9cm   HourlyMetric = "soil_moisture_3_to_9cm"
+	HourlySoilMoisture9to27cm  HourlyMetric = "soil_moisture_9_to_27cm"
+	HourlySoilMoisture27to81cm HourlyMetric = "soil_moisture_27_to_81cm"
+
+	// Pressure level: Temperature
+	HourlyTemperature1000hPa HourlyMetric = "temperature_1000hPa"
+	HourlyTemperature975hPa  HourlyMetric = "temperature_975hPa"
+	HourlyTemperature950hPa  HourlyMetric = "temperature_950hPa"
+	HourlyTemperature925hPa  HourlyMetric = "temperature_925hPa"
+	HourlyTemperature900hPa  HourlyMetric = "temperature_900hPa"
+	HourlyTemperature850hPa  HourlyMetric = "temperature_850hPa"
+	HourlyTemperature800hPa  HourlyMetric = "temperature_800hPa"
+	HourlyTemperature700hPa  HourlyMetric = "temperature_700hPa"
+	HourlyTemperature600hPa  HourlyMetric = "temperature_600hPa"
+	HourlyTemperature500hPa  HourlyMetric = "temperature_500hPa"
+	HourlyTemperature400hPa  HourlyMetric = "temperature_400hPa"
+	HourlyTemperature300hPa  HourlyMetric = "temperature_300hPa"
+	HourlyTemperature250hPa  HourlyMetric = "temperature_250hPa"
+	HourlyTemperature200hPa  HourlyMetric = "temperature_200hPa"
+	HourlyTemperature150hPa  HourlyMetric = "temperature_150hPa"
+	HourlyTemperature100hPa  HourlyMetric = "temperature_100hPa"
+	HourlyTemperature70hPa   HourlyMetric = "temperature_70hPa"
+	HourlyTemperature50hPa   HourlyMetric = "temperature_50hPa"
+	HourlyTemperature30hPa   HourlyMetric = "temperature_30hPa"
+
+	// Pressure level: Relative Humidity
+	HourlyRelativeHumidity1000hPa HourlyMetric = "relative_humidity_1000hPa"
+	HourlyRelativeHumidity975hPa  HourlyMetric = "relative_humidity_975hPa"
+	HourlyRelativeHumidity950hPa  HourlyMetric = "relative_humidity_950hPa"
+	HourlyRelativeHumidity925hPa  HourlyMetric = "relative_humidity_925hPa"
+	HourlyRelativeHumidity900hPa  HourlyMetric = "relative_humidity_900hPa"
+	HourlyRelativeHumidity850hPa  HourlyMetric = "relative_humidity_850hPa"
+	HourlyRelativeHumidity800hPa  HourlyMetric = "relative_humidity_800hPa"
+	HourlyRelativeHumidity700hPa  HourlyMetric = "relative_humidity_700hPa"
+	HourlyRelativeHumidity600hPa  HourlyMetric = "relative_humidity_600hPa"
+	HourlyRelativeHumidity500hPa  HourlyMetric = "relative_humidity_500hPa"
+	HourlyRelativeHumidity400hPa  HourlyMetric = "relative_humidity_400hPa"
+	HourlyRelativeHumidity300hPa  HourlyMetric = "relative_humidity_300hPa"
+	HourlyRelativeHumidity250hPa  HourlyMetric = "relative_humidity_250hPa"
+	HourlyRelativeHumidity200hPa  HourlyMetric = "relative_humidity_200hPa"
+	HourlyRelativeHumidity150hPa  HourlyMetric = "relative_humidity_150hPa"
+	HourlyRelativeHumidity100hPa  HourlyMetric = "relative_humidity_100hPa"
+	HourlyRelativeHumidity70hPa   HourlyMetric = "relative_humidity_70hPa"
+	HourlyRelativeHumidity50hPa   HourlyMetric = "relative_humidity_50hPa"
+	HourlyRelativeHumidity30hPa   HourlyMetric = "relative_humidity_30hPa"
+
+	// Pressure level: Dew Point
+	HourlyDewPoint1000hPa HourlyMetric = "dew_point_1000hPa"
+	HourlyDewPoint975hPa  HourlyMetric = "dew_point_975hPa"
+	HourlyDewPoint950hPa  HourlyMetric = "dew_point_950hPa"
+	HourlyDewPoint925hPa  HourlyMetric = "dew_point_925hPa"
+	HourlyDewPoint900hPa  HourlyMetric = "dew_point_900hPa"
+	HourlyDewPoint850hPa  HourlyMetric = "dew_point_850hPa"
+	HourlyDewPoint800hPa  HourlyMetric = "dew_point_800hPa"
+	HourlyDewPoint700hPa  HourlyMetric = "dew_point_700hPa"
+	HourlyDewPoint600hPa  HourlyMetric = "dew_point_600hPa"
+	HourlyDewPoint500hPa  HourlyMetric = "dew_point_500hPa"
+	HourlyDewPoint400hPa  HourlyMetric = "dew_point_400hPa"
+	HourlyDewPoint300hPa  HourlyMetric = "dew_point_300hPa"
+	HourlyDewPoint250hPa  HourlyMetric = "dew_point_250hPa"
+	HourlyDewPoint200hPa  HourlyMetric = "dew_point_200hPa"
+	HourlyDewPoint150hPa  HourlyMetric = "dew_point_150hPa"
+	HourlyDewPoint100hPa  HourlyMetric = "dew_point_100hPa"
+	HourlyDewPoint70hPa   HourlyMetric = "dew_point_70hPa"
+	HourlyDewPoint50hPa   HourlyMetric = "dew_point_50hPa"
+	HourlyDewPoint30hPa   HourlyMetric = "dew_point_30hPa"
+
+	// Pressure level: Cloud Cover
+	HourlyCloudCover1000hPa HourlyMetric = "cloud_cover_1000hPa"
+	HourlyCloudCover975hPa  HourlyMetric = "cloud_cover_975hPa"
+	HourlyCloudCover950hPa  HourlyMetric = "cloud_cover_950hPa"
+	HourlyCloudCover925hPa  HourlyMetric = "cloud_cover_925hPa"
+	HourlyCloudCover900hPa  HourlyMetric = "cloud_cover_900hPa"
+	HourlyCloudCover850hPa  HourlyMetric = "cloud_cover_850hPa"
+	HourlyCloudCover800hPa  HourlyMetric = "cloud_cover_800hPa"
+	HourlyCloudCover700hPa  HourlyMetric = "cloud_cover_700hPa"
+	HourlyCloudCover600hPa  HourlyMetric = "cloud_cover_600hPa"
+	HourlyCloudCover500hPa  HourlyMetric = "cloud_cover_500hPa"
+	HourlyCloudCover400hPa  HourlyMetric = "cloud_cover_400hPa"
+	HourlyCloudCover300hPa  HourlyMetric = "cloud_cover_300hPa"
+	HourlyCloudCover250hPa  HourlyMetric = "cloud_cover_250hPa"
+	HourlyCloudCover200hPa  HourlyMetric = "cloud_cover_200hPa"
+	HourlyCloudCover150hPa  HourlyMetric = "cloud_cover_150hPa"
+	HourlyCloudCover100hPa  HourlyMetric = "cloud_cover_100hPa"
+	HourlyCloudCover70hPa   HourlyMetric = "cloud_cover_70hPa"
+	HourlyCloudCover50hPa   HourlyMetric = "cloud_cover_50hPa"
+	HourlyCloudCover30hPa   HourlyMetric = "cloud_cover_30hPa"
+
+	// Pressure level: Wind Speed
+	HourlyWindSpeed1000hPa HourlyMetric = "wind_speed_1000hPa"
+	HourlyWindSpeed975hPa  HourlyMetric = "wind_speed_975hPa"
+	HourlyWindSpeed950hPa  HourlyMetric = "wind_speed_950hPa"
+	HourlyWindSpeed925hPa  HourlyMetric = "wind_speed_925hPa"
+	HourlyWindSpeed900hPa  HourlyMetric = "wind_speed_900hPa"
+	HourlyWindSpeed850hPa  HourlyMetric = "wind_speed_850hPa"
+	HourlyWindSpeed800hPa  HourlyMetric = "wind_speed_800hPa"
+	HourlyWindSpeed700hPa  HourlyMetric = "wind_speed_700hPa"
+	HourlyWindSpeed600hPa  HourlyMetric = "wind_speed_600hPa"
+	HourlyWindSpeed500hPa  HourlyMetric = "wind_speed_500hPa"
+	HourlyWindSpeed400hPa  HourlyMetric = "wind_speed_400hPa"
+	HourlyWindSpeed300hPa  HourlyMetric = "wind_speed_300hPa"
+	HourlyWindSpeed250hPa  HourlyMetric = "wind_speed_250hPa"
+	HourlyWindSpeed200hPa  HourlyMetric = "wind_speed_200hPa"
+	HourlyWindSpeed150hPa  HourlyMetric = "wind_speed_150hPa"
+	HourlyWindSpeed100hPa  HourlyMetric = "wind_speed_100hPa"
+	HourlyWindSpeed70hPa   HourlyMetric = "wind_speed_70hPa"
+	HourlyWindSpeed50hPa   HourlyMetric = "wind_speed_50hPa"
+	HourlyWindSpeed30hPa   HourlyMetric = "wind_speed_30hPa"
+
+	// Pressure level: Wind Direction
+	HourlyWindDirection1000hPa HourlyMetric = "wind_direction_1000hPa"
+	HourlyWindDirection975hPa  HourlyMetric = "wind_direction_975hPa"
+	HourlyWindDirection950hPa  HourlyMetric = "wind_direction_950hPa"
+	HourlyWindDirection925hPa  HourlyMetric = "wind_direction_925hPa"
+	HourlyWindDirection900hPa  HourlyMetric = "wind_direction_900hPa"
+	HourlyWindDirection850hPa  HourlyMetric = "wind_direction_850hPa"
+	HourlyWindDirection800hPa  HourlyMetric = "wind_direction_800hPa"
+	HourlyWindDirection700hPa  HourlyMetric = "wind_direction_700hPa"
+	HourlyWindDirection600hPa  HourlyMetric = "wind_direction_600hPa"
+	HourlyWindDirection500hPa  HourlyMetric = "wind_direction_500hPa"
+	HourlyWindDirection400hPa  HourlyMetric = "wind_direction_400hPa"
+	HourlyWindDirection300hPa  HourlyMetric = "wind_direction_300hPa"
+	HourlyWindDirection250hPa  HourlyMetric = "wind_direction_250hPa"
+	HourlyWindDirection200hPa  HourlyMetric = "wind_direction_200hPa"
+	HourlyWindDirection150hPa  HourlyMetric = "wind_direction_150hPa"
+	HourlyWindDirection100hPa  HourlyMetric = "wind_direction_100hPa"
+	HourlyWindDirection70hPa   HourlyMetric = "wind_direction_70hPa"
+	HourlyWindDirection50hPa   HourlyMetric = "wind_direction_50hPa"
+	HourlyWindDirection30hPa   HourlyMetric = "wind_direction_30hPa"
+
+	// Pressure level: Geopotential Height
+	HourlyGeopotentialHeight1000hPa HourlyMetric = "geopotential_height_1000hPa"
+	HourlyGeopotentialHeight975hPa  HourlyMetric = "geopotential_height_975hPa"
+	HourlyGeopotentialHeight950hPa  HourlyMetric = "geopotential_height_950hPa"
+	HourlyGeopotentialHeight925hPa  HourlyMetric = "geopotential_height_925hPa"
+	HourlyGeopotentialHeight900hPa  HourlyMetric = "geopotential_height_900hPa"
+	HourlyGeopotentialHeight850hPa  HourlyMetric = "geopotential_height_850hPa"
+	HourlyGeopotentialHeight800hPa  HourlyMetric = "geopotential_height_800hPa"
+	HourlyGeopotentialHeight700hPa  HourlyMetric = "geopotential_height_700hPa"
+	HourlyGeopotentialHeight600hPa  HourlyMetric = "geopotential_height_600hPa"
+	HourlyGeopotentialHeight500hPa  HourlyMetric = "geopotential_height_500hPa"
+	HourlyGeopotentialHeight400hPa  HourlyMetric = "geopotential_height_400hPa"
+	HourlyGeopotentialHeight300hPa  HourlyMetric = "geopotential_height_300hPa"
+	HourlyGeopotentialHeight250hPa  HourlyMetric = "geopotential_height_250hPa"
+	HourlyGeopotentialHeight200hPa  HourlyMetric = "geopotential_height_200hPa"
+	HourlyGeopotentialHeight150hPa  HourlyMetric = "geopotential_height_150hPa"
+	HourlyGeopotentialHeight100hPa  HourlyMetric = "geopotential_height_100hPa"
+	HourlyGeopotentialHeight70hPa   HourlyMetric = "geopotential_height_70hPa"
+	HourlyGeopotentialHeight50hPa   HourlyMetric = "geopotential_height_50hPa"
+	HourlyGeopotentialHeight30hPa   HourlyMetric = "geopotential_height_30hPa"
+)
+
+// String returns the API parameter string for the metric.
+func (m HourlyMetric) String() string {
+	return string(m)
+}
+
