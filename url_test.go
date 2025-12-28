@@ -27,7 +27,7 @@ func TestForecastRequestURL(t *testing.T) {
 	params := parsed.Query()
 	assert.Equal(t, "52.52", params.Get("latitude"))
 	assert.Equal(t, "13.41", params.Get("longitude"))
-	assert.Equal(t, "temperature_2m,precipitation", params.Get("hourly"))
+	assert.Equal(t, "precipitation,temperature_2m", params.Get("hourly")) // sorted
 	assert.Equal(t, "temperature_2m_max", params.Get("daily"))
 	assert.Equal(t, "celsius", params.Get("temperature_unit"))
 	assert.Equal(t, "Europe/Berlin", params.Get("timezone"))
@@ -95,7 +95,7 @@ func TestHistoricalRequestURL(t *testing.T) {
 	assert.Equal(t, "13.41", params.Get("longitude"))
 	assert.Equal(t, "2023-01-01", params.Get("start_date"))
 	assert.Equal(t, "2023-01-31", params.Get("end_date"))
-	assert.Equal(t, "temperature_2m,precipitation", params.Get("hourly"))
+	assert.Equal(t, "precipitation,temperature_2m", params.Get("hourly")) // sorted
 	assert.Equal(t, "temperature_2m_max,temperature_2m_min", params.Get("daily"))
 	assert.Equal(t, "Europe/Berlin", params.Get("timezone"))
 }
@@ -180,5 +180,23 @@ func TestLocationWithElevation(t *testing.T) {
 	loc = loc.WithElevation(100.5)
 	require.NotNil(t, loc.Elevation)
 	assert.Equal(t, 100.5, *loc.Elevation)
+}
+
+func TestMetricsDeduplication(t *testing.T) {
+	req, err := NewForecastRequest(52.52, 13.41)
+	require.NoError(t, err)
+
+	// Add duplicate metrics via multiple calls
+	req.WithHourly(HourlyTemperature2m, HourlyPrecipitation).
+		WithHourly(HourlyTemperature2m). // duplicate
+		WithHourly(HourlyWindSpeed10m, HourlyPrecipitation) // another duplicate
+
+	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast", "")
+	parsed, err := url.Parse(rawURL)
+	require.NoError(t, err)
+
+	params := parsed.Query()
+	// Should be deduplicated and sorted
+	assert.Equal(t, "precipitation,temperature_2m,wind_speed_10m", params.Get("hourly"))
 }
 

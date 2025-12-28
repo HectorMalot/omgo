@@ -2,6 +2,7 @@ package omgo
 
 import (
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -173,10 +174,21 @@ func formatFloat(f float64) string {
 }
 
 // joinMetrics converts a slice of metric constants to a comma-separated string.
+// Deduplicates and sorts metrics for deterministic URLs.
 // Works with any metric type (HourlyMetric, DailyMetric, CurrentMetric, Minutely15Metric).
 func joinMetrics[T ~string](metrics []T) string {
-	strs := make([]string, len(metrics))
-	for i, m := range metrics {
+	if len(metrics) == 0 {
+		return ""
+	}
+
+	// Clone to avoid mutating the caller's slice, then sort and deduplicate
+	sorted := slices.Clone(metrics)
+	slices.Sort(sorted)
+	sorted = slices.Compact(sorted)
+
+	// Convert to []string for joining
+	strs := make([]string, len(sorted))
+	for i, m := range sorted {
 		strs[i] = string(m)
 	}
 	return strings.Join(strs, ",")
