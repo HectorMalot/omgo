@@ -188,7 +188,7 @@ func TestMetricsDeduplication(t *testing.T) {
 
 	// Add duplicate metrics via multiple calls
 	req.WithHourly(HourlyTemperature2m, HourlyPrecipitation).
-		WithHourly(HourlyTemperature2m). // duplicate
+		WithHourly(HourlyTemperature2m).                    // duplicate
 		WithHourly(HourlyWindSpeed10m, HourlyPrecipitation) // another duplicate
 
 	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast", "")
@@ -199,4 +199,3 @@ func TestMetricsDeduplication(t *testing.T) {
 	// Should be deduplicated and sorted
 	assert.Equal(t, "precipitation,temperature_2m,wind_speed_10m", params.Get("hourly"))
 }
-
