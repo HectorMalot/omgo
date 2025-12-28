@@ -24,16 +24,16 @@ func (r *ForecastRequest) buildURL(baseURL, apiKey string) string {
 
 	// Metrics
 	if len(r.hourlyMetrics) > 0 {
-		params.Set("hourly", joinHourlyMetrics(r.hourlyMetrics))
+		params.Set("hourly", joinMetrics(r.hourlyMetrics))
 	}
 	if len(r.dailyMetrics) > 0 {
-		params.Set("daily", joinDailyMetrics(r.dailyMetrics))
+		params.Set("daily", joinMetrics(r.dailyMetrics))
 	}
 	if len(r.currentMetrics) > 0 {
-		params.Set("current", joinCurrentMetrics(r.currentMetrics))
+		params.Set("current", joinMetrics(r.currentMetrics))
 	}
 	if len(r.minutely15Metrics) > 0 {
-		params.Set("minutely_15", joinMinutely15Metrics(r.minutely15Metrics))
+		params.Set("minutely_15", joinMetrics(r.minutely15Metrics))
 	}
 
 	// Units
@@ -122,10 +122,10 @@ func (r *HistoricalRequest) buildURL(baseURL, apiKey string) string {
 
 	// Metrics
 	if len(r.hourlyMetrics) > 0 {
-		params.Set("hourly", joinHourlyMetrics(r.hourlyMetrics))
+		params.Set("hourly", joinMetrics(r.hourlyMetrics))
 	}
 	if len(r.dailyMetrics) > 0 {
-		params.Set("daily", joinDailyMetrics(r.dailyMetrics))
+		params.Set("daily", joinMetrics(r.dailyMetrics))
 	}
 
 	// Units
@@ -172,35 +172,12 @@ func formatFloat(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }
 
-func joinHourlyMetrics(metrics []HourlyMetric) string {
+// joinMetrics converts a slice of metric constants to a comma-separated string.
+// Works with any metric type (HourlyMetric, DailyMetric, CurrentMetric, Minutely15Metric).
+func joinMetrics[T ~string](metrics []T) string {
 	strs := make([]string, len(metrics))
 	for i, m := range metrics {
 		strs[i] = string(m)
 	}
 	return strings.Join(strs, ",")
 }
-
-func joinDailyMetrics(metrics []DailyMetric) string {
-	strs := make([]string, len(metrics))
-	for i, m := range metrics {
-		strs[i] = string(m)
-	}
-	return strings.Join(strs, ",")
-}
-
-func joinCurrentMetrics(metrics []CurrentMetric) string {
-	strs := make([]string, len(metrics))
-	for i, m := range metrics {
-		strs[i] = string(m)
-	}
-	return strings.Join(strs, ",")
-}
-
-func joinMinutely15Metrics(metrics []Minutely15Metric) string {
-	strs := make([]string, len(metrics))
-	for i, m := range metrics {
-		strs[i] = string(m)
-	}
-	return strings.Join(strs, ",")
-}
-
