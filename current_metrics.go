@@ -26,4 +26,3 @@ const (
 func (m CurrentMetric) String() string {
 	return string(m)
 }
-

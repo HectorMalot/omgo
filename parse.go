@@ -8,25 +8,25 @@ import (
 // rawResponse represents the raw JSON response from the API.
 // This is used as an intermediate step for parsing.
 type rawResponse struct {
-	Latitude             float64         `json:"latitude"`
-	Longitude            float64         `json:"longitude"`
-	Elevation            float64         `json:"elevation"`
-	Timezone             string          `json:"timezone"`
-	TimezoneAbbreviation string          `json:"timezone_abbreviation"`
-	UTCOffsetSeconds     int             `json:"utc_offset_seconds"`
-	GenerationTimeMs     float64         `json:"generationtime_ms"`
+	Latitude             float64 `json:"latitude"`
+	Longitude            float64 `json:"longitude"`
+	Elevation            float64 `json:"elevation"`
+	Timezone             string  `json:"timezone"`
+	TimezoneAbbreviation string  `json:"timezone_abbreviation"`
+	UTCOffsetSeconds     int     `json:"utc_offset_seconds"`
+	GenerationTimeMs     float64 `json:"generationtime_ms"`
 
-	Current         json.RawMessage `json:"current,omitempty"`
-	CurrentUnits    *CurrentUnits   `json:"current_units,omitempty"`
+	Current      json.RawMessage `json:"current,omitempty"`
+	CurrentUnits *CurrentUnits   `json:"current_units,omitempty"`
 
-	Hourly          json.RawMessage `json:"hourly,omitempty"`
-	HourlyUnits     *HourlyUnits    `json:"hourly_units,omitempty"`
+	Hourly      json.RawMessage `json:"hourly,omitempty"`
+	HourlyUnits *HourlyUnits    `json:"hourly_units,omitempty"`
 
-	Minutely15      json.RawMessage `json:"minutely_15,omitempty"`
+	Minutely15      json.RawMessage  `json:"minutely_15,omitempty"`
 	Minutely15Units *Minutely15Units `json:"minutely_15_units,omitempty"`
 
-	Daily           json.RawMessage `json:"daily,omitempty"`
-	DailyUnits      *DailyUnits     `json:"daily_units,omitempty"`
+	Daily      json.RawMessage `json:"daily,omitempty"`
+	DailyUnits *DailyUnits     `json:"daily_units,omitempty"`
 }
 
 // rawCurrent represents the raw current weather data.
@@ -262,4 +262,3 @@ func parseDaily(data json.RawMessage, loc *time.Location) (*DailyData, error) {
 
 	return daily, nil
 }
-

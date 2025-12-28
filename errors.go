@@ -18,4 +18,3 @@ type apiErrorResponse struct {
 	Error  bool   `json:"error"`
 	Reason string `json:"reason"`
 }
-

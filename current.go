@@ -32,4 +32,3 @@ type CurrentData struct {
 func (c *CurrentData) IsDaytime() bool {
 	return c.IsDay != nil && *c.IsDay == 1
 }
-

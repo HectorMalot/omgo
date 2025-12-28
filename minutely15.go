@@ -18,4 +18,3 @@ type Minutely15Data struct {
 	// Global tilted irradiance instant
 	GlobalTiltedIrradianceInstant []float64 `json:"global_tilted_irradiance_instant,omitempty"`
 }
-

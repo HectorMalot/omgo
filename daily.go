@@ -55,4 +55,3 @@ type DailyData struct {
 	UVIndexMax         []float64 `json:"uv_index_max,omitempty"`
 	UVIndexClearSkyMax []float64 `json:"uv_index_clear_sky_max,omitempty"`
 }
-

@@ -37,8 +37,8 @@ const (
 	DailyPrecipitationProbabilityMean DailyMetric = "precipitation_probability_mean"
 
 	// Wind
-	DailyWindSpeed10mMax         DailyMetric = "wind_speed_10m_max"
-	DailyWindGusts10mMax         DailyMetric = "wind_gusts_10m_max"
+	DailyWindSpeed10mMax          DailyMetric = "wind_speed_10m_max"
+	DailyWindGusts10mMax          DailyMetric = "wind_gusts_10m_max"
 	DailyWindDirection10mDominant DailyMetric = "wind_direction_10m_dominant"
 
 	// Radiation
@@ -56,4 +56,3 @@ const (
 func (m DailyMetric) String() string {
 	return string(m)
 }
-

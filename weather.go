@@ -32,4 +32,3 @@ type Weather struct {
 	Daily      *DailyData  `json:"-"` // parsed separately
 	DailyUnits *DailyUnits `json:"daily_units,omitempty"`
 }
-

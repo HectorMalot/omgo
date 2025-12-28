@@ -223,4 +223,3 @@ const (
 func (m HourlyMetric) String() string {
 	return string(m)
 }
-

@@ -14,23 +14,23 @@ const (
 	Minutely15ApparentTemperature Minutely15Metric = "apparent_temperature"
 
 	// Radiation
-	Minutely15ShortwaveRadiation          Minutely15Metric = "shortwave_radiation"
-	Minutely15DirectRadiation             Minutely15Metric = "direct_radiation"
-	Minutely15DirectNormalIrradiance      Minutely15Metric = "direct_normal_irradiance"
-	Minutely15DiffuseRadiation            Minutely15Metric = "diffuse_radiation"
-	Minutely15GlobalTiltedIrradiance      Minutely15Metric = "global_tilted_irradiance"
+	Minutely15ShortwaveRadiation            Minutely15Metric = "shortwave_radiation"
+	Minutely15DirectRadiation               Minutely15Metric = "direct_radiation"
+	Minutely15DirectNormalIrradiance        Minutely15Metric = "direct_normal_irradiance"
+	Minutely15DiffuseRadiation              Minutely15Metric = "diffuse_radiation"
+	Minutely15GlobalTiltedIrradiance        Minutely15Metric = "global_tilted_irradiance"
 	Minutely15GlobalTiltedIrradianceInstant Minutely15Metric = "global_tilted_irradiance_instant"
-	Minutely15SunshineDuration            Minutely15Metric = "sunshine_duration"
+	Minutely15SunshineDuration              Minutely15Metric = "sunshine_duration"
 
 	// Lightning
 	Minutely15LightningPotential Minutely15Metric = "lightning_potential"
 
 	// Precipitation
-	Minutely15Precipitation Minutely15Metric = "precipitation"
-	Minutely15Snowfall      Minutely15Metric = "snowfall"
-	Minutely15SnowfallHeight Minutely15Metric = "snowfall_height"
-	Minutely15Rain          Minutely15Metric = "rain"
-	Minutely15Showers       Minutely15Metric = "showers"
+	Minutely15Precipitation       Minutely15Metric = "precipitation"
+	Minutely15Snowfall            Minutely15Metric = "snowfall"
+	Minutely15SnowfallHeight      Minutely15Metric = "snowfall_height"
+	Minutely15Rain                Minutely15Metric = "rain"
+	Minutely15Showers             Minutely15Metric = "showers"
 	Minutely15FreezingLevelHeight Minutely15Metric = "freezing_level_height"
 
 	// Weather
@@ -50,4 +50,3 @@ const (
 func (m Minutely15Metric) String() string {
 	return string(m)
 }
-

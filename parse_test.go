@@ -147,4 +147,3 @@ func TestWeatherCodeString(t *testing.T) {
 		})
 	}
 }
-
