@@ -18,9 +18,9 @@ type ForecastRequest struct {
 	precipitationUnit PrecipitationUnit
 
 	// Time options
-	timezone     string
-	forecastDays int
-	pastDays     int
+	timezone      string
+	forecastDays  int
+	pastDays      int
 	forecastHours int
 	pastHours     int
 
@@ -276,4 +276,3 @@ func (r *HistoricalRequest) WithAzimuth(degrees float64) *HistoricalRequest {
 	r.azimuth = &degrees
 	return r
 }
-
