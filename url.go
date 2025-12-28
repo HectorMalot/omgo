@@ -11,8 +11,8 @@ const (
 	historicalBaseURL = "https://archive-api.open-meteo.com/v1/archive"
 )
 
-// buildForecastURL builds the URL for a forecast request.
-func (r *ForecastRequest) buildURL(baseURL string) string {
+// buildURL builds the URL for a forecast request.
+func (r *ForecastRequest) buildURL(baseURL, apiKey string) string {
 	params := url.Values{}
 
 	// Location
@@ -97,11 +97,16 @@ func (r *ForecastRequest) buildURL(baseURL string) string {
 		params.Set("azimuth", formatFloat(*r.azimuth))
 	}
 
+	// API key for commercial access
+	if apiKey != "" {
+		params.Set("apikey", apiKey)
+	}
+
 	return baseURL + "?" + params.Encode()
 }
 
-// buildHistoricalURL builds the URL for a historical request.
-func (r *HistoricalRequest) buildURL(baseURL string) string {
+// buildURL builds the URL for a historical request.
+func (r *HistoricalRequest) buildURL(baseURL, apiKey string) string {
 	params := url.Values{}
 
 	// Location
@@ -151,6 +156,11 @@ func (r *HistoricalRequest) buildURL(baseURL string) string {
 	}
 	if r.azimuth != nil {
 		params.Set("azimuth", formatFloat(*r.azimuth))
+	}
+
+	// API key for commercial access
+	if apiKey != "" {
+		params.Set("apikey", apiKey)
 	}
 
 	return baseURL + "?" + params.Encode()

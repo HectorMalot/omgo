@@ -18,7 +18,7 @@ func TestForecastRequestURL(t *testing.T) {
 		WithTimezone("Europe/Berlin").
 		WithForecastDays(7)
 
-	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast")
+	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast", "")
 
 	// Parse the URL to check parameters
 	parsed, err := url.Parse(rawURL)
@@ -32,6 +32,7 @@ func TestForecastRequestURL(t *testing.T) {
 	assert.Equal(t, "celsius", params.Get("temperature_unit"))
 	assert.Equal(t, "Europe/Berlin", params.Get("timezone"))
 	assert.Equal(t, "7", params.Get("forecast_days"))
+	assert.Empty(t, params.Get("apikey"))
 }
 
 func TestForecastRequestWithAllOptions(t *testing.T) {
@@ -55,7 +56,7 @@ func TestForecastRequestWithAllOptions(t *testing.T) {
 		WithTilt(tilt).
 		WithAzimuth(azimuth)
 
-	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast")
+	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast", "")
 	parsed, err := url.Parse(rawURL)
 	require.NoError(t, err)
 
@@ -85,7 +86,7 @@ func TestHistoricalRequestURL(t *testing.T) {
 		WithDaily(DailyTemperature2mMax, DailyTemperature2mMin).
 		WithTimezone("Europe/Berlin")
 
-	rawURL := req.buildURL("https://archive-api.open-meteo.com/v1/archive")
+	rawURL := req.buildURL("https://archive-api.open-meteo.com/v1/archive", "")
 	parsed, err := url.Parse(rawURL)
 	require.NoError(t, err)
 
@@ -97,6 +98,34 @@ func TestHistoricalRequestURL(t *testing.T) {
 	assert.Equal(t, "temperature_2m,precipitation", params.Get("hourly"))
 	assert.Equal(t, "temperature_2m_max,temperature_2m_min", params.Get("daily"))
 	assert.Equal(t, "Europe/Berlin", params.Get("timezone"))
+}
+
+func TestForecastRequestWithAPIKey(t *testing.T) {
+	req, err := NewForecastRequest(52.52, 13.41)
+	require.NoError(t, err)
+
+	req.WithHourly(HourlyTemperature2m)
+
+	rawURL := req.buildURL("https://api.open-meteo.com/v1/forecast", "test-api-key")
+	parsed, err := url.Parse(rawURL)
+	require.NoError(t, err)
+
+	params := parsed.Query()
+	assert.Equal(t, "test-api-key", params.Get("apikey"))
+}
+
+func TestHistoricalRequestWithAPIKey(t *testing.T) {
+	req, err := NewHistoricalRequest(52.52, 13.41, "2023-01-01", "2023-01-31")
+	require.NoError(t, err)
+
+	req.WithHourly(HourlyTemperature2m)
+
+	rawURL := req.buildURL("https://archive-api.open-meteo.com/v1/archive", "test-api-key")
+	parsed, err := url.Parse(rawURL)
+	require.NoError(t, err)
+
+	params := parsed.Query()
+	assert.Equal(t, "test-api-key", params.Get("apikey"))
 }
 
 func TestHistoricalRequestValidation(t *testing.T) {

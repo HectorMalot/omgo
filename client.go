@@ -82,10 +82,7 @@ func WithAPIKey(key string) Option {
 
 // Forecast retrieves weather forecast data for the given request.
 func (c *Client) Forecast(ctx context.Context, req *ForecastRequest) (*Weather, error) {
-	url := req.buildURL(c.forecastURL)
-	if c.apiKey != "" {
-		url += "&apikey=" + c.apiKey
-	}
+	url := req.buildURL(c.forecastURL, c.apiKey)
 
 	body, err := c.doRequest(ctx, url)
 	if err != nil {
@@ -97,10 +94,7 @@ func (c *Client) Forecast(ctx context.Context, req *ForecastRequest) (*Weather, 
 
 // Historical retrieves historical weather data for the given request.
 func (c *Client) Historical(ctx context.Context, req *HistoricalRequest) (*Weather, error) {
-	url := req.buildURL(c.historicalURL)
-	if c.apiKey != "" {
-		url += "&apikey=" + c.apiKey
-	}
+	url := req.buildURL(c.historicalURL, c.apiKey)
 
 	body, err := c.doRequest(ctx, url)
 	if err != nil {
