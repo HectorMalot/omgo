@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // HTTPClient is an interface for making HTTP requests.
@@ -27,14 +28,23 @@ type Client struct {
 type Option func(*Client)
 
 // DefaultUserAgent is the default User-Agent header sent with requests.
-const DefaultUserAgent = "omgo/0.1.0"
+const DefaultUserAgent = "omgo/0.2.0"
+
+// DefaultTimeout is the default timeout for HTTP requests.
+// Users can override this by providing a custom HTTP client via WithHTTPClient.
+const DefaultTimeout = 30 * time.Second
+
+// defaultHTTPClient is the default HTTP client with a sensible timeout.
+var defaultHTTPClient = &http.Client{
+	Timeout: DefaultTimeout,
+}
 
 // NewClient creates a new Open-Meteo API client.
 func NewClient(opts ...Option) *Client {
 	c := &Client{
 		forecastURL:   forecastBaseURL,
 		historicalURL: historicalBaseURL,
-		httpClient:    http.DefaultClient,
+		httpClient:    defaultHTTPClient,
 		userAgent:     DefaultUserAgent,
 	}
 	for _, opt := range opts {
