@@ -2,6 +2,8 @@ package omgo
 
 import "fmt"
 
+type Model string
+
 // ForecastRequest represents a request to the Forecast API.
 type ForecastRequest struct {
 	location Location
@@ -155,6 +157,13 @@ func (r *ForecastRequest) WithCellSelection(selection CellSelection) *ForecastRe
 // WithModels sets specific weather models to use.
 func (r *ForecastRequest) WithModels(models ...string) *ForecastRequest {
 	r.models = append(r.models, models...)
+	return r
+}
+
+func (r *ForecastRequest) WithModelConstants(models ...Model) *ForecastRequest {
+	for _, m := range models {
+		r.models = append(r.models, string(m))
+	}
 	return r
 }
 

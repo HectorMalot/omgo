@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	forecastBaseURL   = "https://api.open-meteo.com/v1/forecast"
-	historicalBaseURL = "https://archive-api.open-meteo.com/v1/archive"
+	forecastBaseURL       = "https://api.open-meteo.com/v1/forecast"
+	historicalBaseURL     = "https://archive-api.open-meteo.com/v1/archive"
+	docsURL               = "https://open-meteo.com/en/docs"
+	modelUpdatesURL       = "https://open-meteo.com/en/docs/model-updates"
+	openDataModelsListURL = "https://openmeteo.s3.amazonaws.com/?list-type=2&prefix=data/&delimiter=/"
 )
 
 // buildURL builds the URL for a forecast request.
@@ -83,8 +86,22 @@ func (r *ForecastRequest) buildURL(baseURL, apiKey string) string {
 	if r.cellSelection != "" {
 		params.Set("cell_selection", string(r.cellSelection))
 	}
+	modelsCSV := ""
 	if len(r.models) > 0 {
-		params.Set("models", strings.Join(r.models, ","))
+		models := slices.Clone(r.models)
+		slices.Sort(models)
+		models = slices.Compact(models)
+
+		escaped := make([]string, 0, len(models))
+		for _, m := range models {
+			if m == "" {
+				continue
+			}
+			escaped = append(escaped, url.QueryEscape(m))
+		}
+		if len(escaped) > 0 {
+			modelsCSV = strings.Join(escaped, ",")
+		}
 	}
 
 	// Solar options
@@ -100,7 +117,14 @@ func (r *ForecastRequest) buildURL(baseURL, apiKey string) string {
 		params.Set("apikey", apiKey)
 	}
 
-	return baseURL + "?" + params.Encode()
+	rawQuery := params.Encode()
+	if modelsCSV != "" {
+		if rawQuery != "" {
+			rawQuery += "&"
+		}
+		rawQuery += "models=" + modelsCSV
+	}
+	return baseURL + "?" + rawQuery
 }
 
 // buildURL builds the URL for a historical request.

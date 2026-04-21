@@ -3,9 +3,13 @@ package omgo
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -149,4 +153,160 @@ func (c *Client) doRequest(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func (c *Client) FetchForecastModels(ctx context.Context) ([]Model, error) {
+	var lastErr error
+	for _, pageURL := range []string{modelUpdatesURL, docsURL} {
+		html, err := c.doRequest(ctx, pageURL)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		optionsChunkURL, ok := findOptionsChunkURLFromHTML(string(html))
+		if !ok {
+			lastErr = fmt.Errorf("could not locate models list in %s", pageURL)
+			continue
+		}
+
+		js, err := c.doRequest(ctx, optionsChunkURL)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		models, ok := parseModelsFromOptionsChunkJS(string(js))
+		if !ok {
+			lastErr = fmt.Errorf("could not parse models list from %s", optionsChunkURL)
+			continue
+		}
+
+		return models, nil
+	}
+
+	if lastErr == nil {
+		lastErr = fmt.Errorf("could not fetch models list")
+	}
+	return nil, lastErr
+}
+
+func (c *Client) FetchAllModels(ctx context.Context) ([]Model, error) {
+	return c.FetchOpenDataModels(ctx)
+}
+
+func findOptionsChunkURLFromHTML(html string) (string, bool) {
+	re := regexp.MustCompile(`href=['"](/_app/immutable/chunks/options\.[^'"]+\.js)['"]`)
+	m := re.FindStringSubmatch(html)
+	if len(m) < 2 {
+		return "", false
+	}
+	return "https://open-meteo.com" + m[1], true
+}
+
+func parseModelsFromOptionsChunkJS(js string) ([]Model, bool) {
+	start := strings.Index(js, "u=[[")
+	if start == -1 {
+		return nil, false
+	}
+	start += len("u=[[")
+	end := strings.Index(js[start:], "]],d=")
+	if end == -1 {
+		return nil, false
+	}
+	section := js[start : start+end]
+
+	reVal := regexp.MustCompile("value:`([a-z0-9_]+)`")
+	matches := reVal.FindAllStringSubmatch(section, -1)
+	if len(matches) == 0 {
+		return nil, false
+	}
+
+	set := make(map[string]struct{}, len(matches))
+	for _, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		set[m[1]] = struct{}{}
+	}
+
+	out := make([]Model, 0, len(set))
+	for m := range set {
+		out = append(out, Model(m))
+	}
+	sort.Slice(out, func(i, j int) bool { return string(out[i]) < string(out[j]) })
+	return out, true
+}
+
+func (c *Client) FetchOpenDataModels(ctx context.Context) ([]Model, error) {
+	body, err := c.doRequest(ctx, openDataModelsListURL)
+	if err != nil {
+		return nil, err
+	}
+	models, ok := parseModelsFromS3ListXML(string(body))
+	if !ok {
+		return nil, fmt.Errorf("could not parse models list from %s", openDataModelsListURL)
+	}
+	return models, nil
+}
+
+type s3ListBucketResult struct {
+	CommonPrefixes []struct {
+		Prefix string `xml:"Prefix"`
+	} `xml:"CommonPrefixes"`
+}
+
+func parseModelsFromS3ListXML(doc string) ([]Model, bool) {
+	var res s3ListBucketResult
+	if err := xml.Unmarshal([]byte(doc), &res); err != nil {
+		return nil, false
+	}
+
+	if len(res.CommonPrefixes) == 0 {
+		return nil, false
+	}
+
+	set := make(map[string]struct{}, len(res.CommonPrefixes))
+	for _, p := range res.CommonPrefixes {
+		s := strings.TrimSpace(p.Prefix)
+		s = strings.TrimPrefix(s, "data/")
+		s = strings.TrimSuffix(s, "/")
+		if s == "" {
+			continue
+		}
+		set[s] = struct{}{}
+	}
+
+	if len(set) == 0 {
+		return nil, false
+	}
+
+	out := make([]Model, 0, len(set))
+	for m := range set {
+		out = append(out, Model(m))
+	}
+	sort.Slice(out, func(i, j int) bool { return string(out[i]) < string(out[j]) })
+	return out, true
+}
+
+type ModelMeta struct {
+	ChunkTimeLength           *int64  `json:"chunk_time_length,omitempty"`
+	CRSWKT                    *string `json:"crs_wkt,omitempty"`
+	DataEndTime               *int64  `json:"data_end_time,omitempty"`
+	LastRunAvailabilityTime   *int64  `json:"last_run_availability_time,omitempty"`
+	LastRunInitialisationTime *int64  `json:"last_run_initialisation_time,omitempty"`
+	LastRunModificationTime   *int64  `json:"last_run_modification_time,omitempty"`
+	TemporalResolutionSeconds *int64  `json:"temporal_resolution_seconds,omitempty"`
+	UpdateIntervalSeconds     *int64  `json:"update_interval_seconds,omitempty"`
+}
+
+func (c *Client) FetchModelMeta(ctx context.Context, metaURL string) (*ModelMeta, error) {
+	body, err := c.doRequest(ctx, metaURL)
+	if err != nil {
+		return nil, err
+	}
+	var v ModelMeta
+	if err := json.Unmarshal(body, &v); err != nil {
+		return nil, err
+	}
+	return &v, nil
 }

@@ -2,6 +2,11 @@ package omgo
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,13 +25,13 @@ type rawResponse struct {
 	CurrentUnits *CurrentUnits   `json:"current_units,omitempty"`
 
 	Hourly      json.RawMessage `json:"hourly,omitempty"`
-	HourlyUnits *HourlyUnits    `json:"hourly_units,omitempty"`
+	HourlyUnits json.RawMessage `json:"hourly_units,omitempty"`
 
-	Minutely15      json.RawMessage  `json:"minutely_15,omitempty"`
-	Minutely15Units *Minutely15Units `json:"minutely_15_units,omitempty"`
+	Minutely15      json.RawMessage `json:"minutely_15,omitempty"`
+	Minutely15Units json.RawMessage `json:"minutely_15_units,omitempty"`
 
 	Daily      json.RawMessage `json:"daily,omitempty"`
-	DailyUnits *DailyUnits     `json:"daily_units,omitempty"`
+	DailyUnits json.RawMessage `json:"daily_units,omitempty"`
 }
 
 // rawCurrent represents the raw current weather data.
@@ -97,9 +102,6 @@ func parseWeatherResponse(body []byte) (*Weather, error) {
 		UTCOffsetSeconds:     raw.UTCOffsetSeconds,
 		GenerationTimeMs:     raw.GenerationTimeMs,
 		CurrentUnits:         raw.CurrentUnits,
-		HourlyUnits:          raw.HourlyUnits,
-		Minutely15Units:      raw.Minutely15Units,
-		DailyUnits:           raw.DailyUnits,
 	}
 
 	// Parse current weather
@@ -111,34 +113,82 @@ func parseWeatherResponse(body []byte) (*Weather, error) {
 		weather.Current = current
 	}
 
-	// Parse hourly data
-	if len(raw.Hourly) > 0 {
-		hourly, err := parseHourly(raw.Hourly, loc)
-		if err != nil {
-			return nil, err
-		}
-		weather.Hourly = hourly
+	if err := assignUnits(raw.HourlyUnits, parseHourlyUnits, func(units *HourlyUnits, byModel map[string]*HourlyUnits) {
+		weather.HourlyUnits = units
+		weather.HourlyUnitsByModel = byModel
+	}); err != nil {
+		return nil, err
 	}
 
-	// Parse 15-minutely data
-	if len(raw.Minutely15) > 0 {
-		minutely15, err := parseMinutely15(raw.Minutely15, loc)
-		if err != nil {
-			return nil, err
-		}
-		weather.Minutely15 = minutely15
+	if err := assignData(raw.Hourly, loc, parseHourly, func(data *HourlyData, byModel map[string]*HourlyData) {
+		weather.Hourly = data
+		weather.HourlyByModel = byModel
+	}); err != nil {
+		return nil, err
 	}
 
-	// Parse daily data
-	if len(raw.Daily) > 0 {
-		daily, err := parseDaily(raw.Daily, loc)
-		if err != nil {
-			return nil, err
-		}
-		weather.Daily = daily
+	if err := assignUnits(raw.Minutely15Units, parseMinutely15Units, func(units *Minutely15Units, byModel map[string]*Minutely15Units) {
+		weather.Minutely15Units = units
+		weather.Minutely15UnitsByModel = byModel
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := assignData(raw.Minutely15, loc, parseMinutely15, func(data *Minutely15Data, byModel map[string]*Minutely15Data) {
+		weather.Minutely15 = data
+		weather.Minutely15ByModel = byModel
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := assignUnits(raw.DailyUnits, parseDailyUnits, func(units *DailyUnits, byModel map[string]*DailyUnits) {
+		weather.DailyUnits = units
+		weather.DailyUnitsByModel = byModel
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := assignData(raw.Daily, loc, parseDaily, func(data *DailyData, byModel map[string]*DailyData) {
+		weather.Daily = data
+		weather.DailyByModel = byModel
+	}); err != nil {
+		return nil, err
 	}
 
 	return weather, nil
+}
+
+func assignUnits[U any](
+	raw json.RawMessage,
+	parse func(json.RawMessage) (*U, map[string]*U, error),
+	assign func(*U, map[string]*U),
+) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	units, byModel, err := parse(raw)
+	if err != nil {
+		return err
+	}
+	assign(units, byModel)
+	return nil
+}
+
+func assignData[T any](
+	raw json.RawMessage,
+	loc *time.Location,
+	parse func(json.RawMessage, *time.Location) (*T, map[string]*T, error),
+	assign func(*T, map[string]*T),
+) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	data, byModel, err := parse(raw, loc)
+	if err != nil {
+		return err
+	}
+	assign(data, byModel)
+	return nil
 }
 
 // parseCurrent parses current weather data.
@@ -175,90 +225,540 @@ func parseCurrent(data json.RawMessage, loc *time.Location) (*CurrentData, error
 }
 
 // parseHourly parses hourly weather data.
-func parseHourly(data json.RawMessage, loc *time.Location) (*HourlyData, error) {
-	// First, parse just the time array
-	var rawTime rawHourly
-	if err := json.Unmarshal(data, &rawTime); err != nil {
-		return nil, err
-	}
-
-	// Parse times
-	times, err := parseDateTimeArray(rawTime.Time, loc)
+func parseHourly(data json.RawMessage, loc *time.Location) (*HourlyData, map[string]*HourlyData, error) {
+	obj, err := unmarshalJSONObject(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Parse all other fields into HourlyData
+	times, err := parseDateTimeArrayFromRaw(obj["time"], loc)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(HourlyData{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
 	hourly := &HourlyData{}
-	if err := json.Unmarshal(data, hourly); err != nil {
-		return nil, err
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), hourly); err != nil {
+			return nil, nil, err
+		}
+	}
+	hourly.Times = times
+
+	var byModel map[string]*HourlyData
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*HourlyData, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			modelObj["time"] = obj["time"]
+			h := &HourlyData{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), h); err != nil {
+				return nil, nil, err
+			}
+			h.Times = times
+			byModel[model] = h
+		}
+		if !hasMetricData(hourly) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				hourly = byModel[first]
+			}
+		}
 	}
 
-	hourly.Times = times
-	return hourly, nil
+	return hourly, byModel, nil
 }
 
 // parseMinutely15 parses 15-minutely weather data.
-func parseMinutely15(data json.RawMessage, loc *time.Location) (*Minutely15Data, error) {
-	// First, parse just the time array
-	var rawTime rawMinutely15
-	if err := json.Unmarshal(data, &rawTime); err != nil {
-		return nil, err
-	}
-
-	// Parse times
-	times, err := parseDateTimeArray(rawTime.Time, loc)
+func parseMinutely15(data json.RawMessage, loc *time.Location) (*Minutely15Data, map[string]*Minutely15Data, error) {
+	obj, err := unmarshalJSONObject(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Parse all other fields into Minutely15Data
+	times, err := parseDateTimeArrayFromRaw(obj["time"], loc)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(Minutely15Data{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
 	minutely15 := &Minutely15Data{}
-	if err := json.Unmarshal(data, minutely15); err != nil {
-		return nil, err
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), minutely15); err != nil {
+			return nil, nil, err
+		}
+	}
+	minutely15.Times = times
+
+	var byModel map[string]*Minutely15Data
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*Minutely15Data, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			modelObj["time"] = obj["time"]
+			m := &Minutely15Data{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), m); err != nil {
+				return nil, nil, err
+			}
+			m.Times = times
+			byModel[model] = m
+		}
+		if !hasMetricData(minutely15) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				minutely15 = byModel[first]
+			}
+		}
 	}
 
-	minutely15.Times = times
-	return minutely15, nil
+	return minutely15, byModel, nil
 }
 
 // parseDaily parses daily weather data.
-func parseDaily(data json.RawMessage, loc *time.Location) (*DailyData, error) {
-	// First, parse time and sun times
-	var rawTime rawDaily
-	if err := json.Unmarshal(data, &rawTime); err != nil {
-		return nil, err
-	}
-
-	// Parse dates
-	times, err := parseDateArray(rawTime.Time, loc)
+func parseDaily(data json.RawMessage, loc *time.Location) (*DailyData, map[string]*DailyData, error) {
+	obj, err := unmarshalJSONObject(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Parse all other fields into DailyData
+	times, err := parseDateArrayFromRaw(obj["time"], loc)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var sunrise []time.Time
+	if len(obj["sunrise"]) > 0 {
+		sunrise, err = parseDateTimeArrayFromRaw(obj["sunrise"], loc)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	var sunset []time.Time
+	if len(obj["sunset"]) > 0 {
+		sunset, err = parseDateTimeArrayFromRaw(obj["sunset"], loc)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(DailyData{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
 	daily := &DailyData{}
-	if err := json.Unmarshal(data, daily); err != nil {
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), daily); err != nil {
+			return nil, nil, err
+		}
+	}
+	daily.Times = times
+	daily.Sunrise = sunrise
+	daily.Sunset = sunset
+
+	var byModel map[string]*DailyData
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*DailyData, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			modelObj["time"] = obj["time"]
+			if len(obj["sunrise"]) > 0 {
+				modelObj["sunrise"] = obj["sunrise"]
+			}
+			if len(obj["sunset"]) > 0 {
+				modelObj["sunset"] = obj["sunset"]
+			}
+			d := &DailyData{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), d); err != nil {
+				return nil, nil, err
+			}
+			d.Times = times
+			d.Sunrise = sunrise
+			d.Sunset = sunset
+			byModel[model] = d
+		}
+		if !hasMetricData(daily) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				daily = byModel[first]
+			}
+		}
+	}
+
+	return daily, byModel, nil
+}
+
+type jsonTagInfo struct {
+	set       map[string]struct{}
+	byLenDesc []string
+}
+
+var jsonTagInfoCache sync.Map
+
+func getJSONTagInfo(t reflect.Type) *jsonTagInfo {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if v, ok := jsonTagInfoCache.Load(t); ok {
+		return v.(*jsonTagInfo)
+	}
+
+	set := make(map[string]struct{})
+	var names []string
+	collectJSONTags(t, set, &names)
+
+	byLenDesc := make([]string, 0, len(names))
+	byLenDesc = append(byLenDesc, names...)
+	sort.Slice(byLenDesc, func(i, j int) bool {
+		if len(byLenDesc[i]) != len(byLenDesc[j]) {
+			return len(byLenDesc[i]) > len(byLenDesc[j])
+		}
+		return byLenDesc[i] < byLenDesc[j]
+	})
+
+	info := &jsonTagInfo{
+		set:       set,
+		byLenDesc: byLenDesc,
+	}
+	jsonTagInfoCache.Store(t, info)
+	return info
+}
+
+func collectJSONTags(t reflect.Type, set map[string]struct{}, names *[]string) {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return
+	}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if f.Anonymous {
+			collectJSONTags(f.Type, set, names)
+			continue
+		}
+		tag := f.Tag.Get("json")
+		if tag == "" || tag == "-" {
+			continue
+		}
+		name := tag
+		if idx := strings.IndexByte(tag, ','); idx >= 0 {
+			name = tag[:idx]
+		}
+		if name == "" {
+			continue
+		}
+		if _, ok := set[name]; ok {
+			continue
+		}
+		set[name] = struct{}{}
+		*names = append(*names, name)
+	}
+}
+
+func unmarshalJSONObject(data json.RawMessage) (map[string]json.RawMessage, error) {
+	if len(data) == 0 {
+		return map[string]json.RawMessage{}, nil
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, err
 	}
-
-	daily.Times = times
-
-	// Parse sunrise/sunset times
-	if len(rawTime.Sunrise) > 0 {
-		sunrise, err := parseDateTimeArray(rawTime.Sunrise, loc)
-		if err != nil {
-			return nil, err
-		}
-		daily.Sunrise = sunrise
+	if obj == nil {
+		obj = map[string]json.RawMessage{}
 	}
-	if len(rawTime.Sunset) > 0 {
-		sunset, err := parseDateTimeArray(rawTime.Sunset, loc)
-		if err != nil {
-			return nil, err
+	return obj, nil
+}
+
+func mustMarshalObject(obj map[string]json.RawMessage) []byte {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func splitJSONObjectByModel(
+	obj map[string]json.RawMessage,
+	info *jsonTagInfo,
+) (map[string]json.RawMessage, map[string]map[string]json.RawMessage) {
+	baseObj := make(map[string]json.RawMessage)
+	modelObjs := make(map[string]map[string]json.RawMessage)
+
+	for k, v := range obj {
+		if k == "time" || k == "sunrise" || k == "sunset" {
+			baseObj[k] = v
+			continue
 		}
-		daily.Sunset = sunset
+		if _, ok := info.set[k]; ok {
+			baseObj[k] = v
+			continue
+		}
+		base, model, ok := matchModelSuffix(k, info.byLenDesc)
+		if !ok || model == "" {
+			continue
+		}
+		m := modelObjs[model]
+		if m == nil {
+			m = make(map[string]json.RawMessage)
+			modelObjs[model] = m
+		}
+		m[base] = v
 	}
 
-	return daily, nil
+	if len(modelObjs) == 0 {
+		return baseObj, nil
+	}
+	return baseObj, modelObjs
+}
+
+func matchModelSuffix(key string, basesByLenDesc []string) (base string, model string, ok bool) {
+	for _, b := range basesByLenDesc {
+		prefix := b + "_"
+		if strings.HasPrefix(key, prefix) {
+			return b, strings.TrimPrefix(key, prefix), true
+		}
+	}
+	return "", "", false
+}
+
+func parseDateTimeArrayFromRaw(data json.RawMessage, loc *time.Location) ([]time.Time, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+	var s []string
+	if err := json.Unmarshal(data, &s); err == nil {
+		return parseDateTimeArray(s, loc)
+	}
+	var i []int64
+	if err := json.Unmarshal(data, &i); err == nil {
+		return unixSecondsToTimes(i, loc), nil
+	}
+	return nil, fmt.Errorf("unsupported time format: %s", string(data))
+}
+
+func parseDateArrayFromRaw(data json.RawMessage, loc *time.Location) ([]time.Time, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+	var s []string
+	if err := json.Unmarshal(data, &s); err == nil {
+		return parseDateArray(s, loc)
+	}
+	var i []int64
+	if err := json.Unmarshal(data, &i); err == nil {
+		return unixSecondsToTimes(i, loc), nil
+	}
+	return nil, fmt.Errorf("unsupported date format: %s", string(data))
+}
+
+func unixSecondsToTimes(arr []int64, loc *time.Location) []time.Time {
+	if loc == nil {
+		loc = time.UTC
+	}
+	result := make([]time.Time, len(arr))
+	for idx, sec := range arr {
+		result[idx] = time.Unix(sec, 0).In(loc)
+	}
+	return result
+}
+
+func hasMetricData(v any) bool {
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return false
+	}
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+	return hasMetricDataValue(rv)
+}
+
+func hasMetricDataValue(rv reflect.Value) bool {
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
+	rt := rv.Type()
+	for i := 0; i < rv.NumField(); i++ {
+		fv := rv.Field(i)
+		ft := rt.Field(i)
+
+		if ft.Anonymous && fv.Kind() == reflect.Struct {
+			if hasMetricDataValue(fv) {
+				return true
+			}
+			continue
+		}
+
+		if ft.Name == "Times" || ft.Name == "Sunrise" || ft.Name == "Sunset" {
+			continue
+		}
+
+		if fv.Kind() == reflect.Slice && fv.Len() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func hasUnitData(v any) bool {
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return false
+	}
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+	return hasUnitDataValue(rv)
+}
+
+func hasUnitDataValue(rv reflect.Value) bool {
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
+	rt := rv.Type()
+	for i := 0; i < rv.NumField(); i++ {
+		fv := rv.Field(i)
+		ft := rt.Field(i)
+
+		if ft.Anonymous && fv.Kind() == reflect.Struct {
+			if hasUnitDataValue(fv) {
+				return true
+			}
+			continue
+		}
+
+		if fv.Kind() == reflect.String && fv.String() != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func firstSortedKey[V any](m map[string]V) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys[0]
+}
+
+func parseHourlyUnits(data json.RawMessage) (*HourlyUnits, map[string]*HourlyUnits, error) {
+	obj, err := unmarshalJSONObject(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(HourlyUnits{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
+	units := &HourlyUnits{}
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), units); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var byModel map[string]*HourlyUnits
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*HourlyUnits, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			u := &HourlyUnits{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), u); err != nil {
+				return nil, nil, err
+			}
+			byModel[model] = u
+		}
+		if !hasUnitData(units) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				units = byModel[first]
+			}
+		}
+	}
+
+	return units, byModel, nil
+}
+
+func parseMinutely15Units(data json.RawMessage) (*Minutely15Units, map[string]*Minutely15Units, error) {
+	obj, err := unmarshalJSONObject(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(Minutely15Units{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
+	units := &Minutely15Units{}
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), units); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var byModel map[string]*Minutely15Units
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*Minutely15Units, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			u := &Minutely15Units{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), u); err != nil {
+				return nil, nil, err
+			}
+			byModel[model] = u
+		}
+		if !hasUnitData(units) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				units = byModel[first]
+			}
+		}
+	}
+
+	return units, byModel, nil
+}
+
+func parseDailyUnits(data json.RawMessage) (*DailyUnits, map[string]*DailyUnits, error) {
+	obj, err := unmarshalJSONObject(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := getJSONTagInfo(reflect.TypeOf(DailyUnits{}))
+	baseObj, modelObjs := splitJSONObjectByModel(obj, info)
+
+	units := &DailyUnits{}
+	if len(baseObj) > 0 {
+		if err := json.Unmarshal(mustMarshalObject(baseObj), units); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var byModel map[string]*DailyUnits
+	if len(modelObjs) > 0 {
+		byModel = make(map[string]*DailyUnits, len(modelObjs))
+		for model, modelObj := range modelObjs {
+			u := &DailyUnits{}
+			if err := json.Unmarshal(mustMarshalObject(modelObj), u); err != nil {
+				return nil, nil, err
+			}
+			byModel[model] = u
+		}
+		if !hasUnitData(units) {
+			first := firstSortedKey(byModel)
+			if first != "" {
+				units = byModel[first]
+			}
+		}
+	}
+
+	return units, byModel, nil
 }
